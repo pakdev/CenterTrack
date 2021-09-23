@@ -104,7 +104,6 @@ class Visualizer:
 
     def get_bird_bbox(self, result, img_size, visibility_threshold=0.3):
         if result["score"] > visibility_threshold:
-            print(self.names[result["class"] - 1])
             dim = result["dim"]
             loc = result["loc"]
             rot_y = result["rot_y"]
