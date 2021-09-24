@@ -45,12 +45,10 @@ def main():
 
     image_paths = get_paths(root, "*.png")
     calib_paths = get_paths(root / "calib", "*.txt")
-    js_opts = jsbeautifier.default_options()
-    js_opts.indent_size = 2
 
-    annotations = []
+    coco = {"annotations": []}
     img_size = (600, 600)
-    bird_bboxes = defaultdict(lambda: [])
+    bird_bboxes = defaultdict(lambda: {})
 
     for i in range(669):
         image = cv2.imread(str(image_paths[i]))
@@ -61,18 +59,18 @@ def main():
 
         for result in results["results"]:
             class_id = result["class"] - 1
-            if class_id not in [0, 1, 2]:
+            if class_id not in [0, 1]:
                 continue
 
             bird_view = visualizer.get_bird_view(bird_view, result, img_size)
 
             bird_bbox = visualizer.get_bird_bbox(result, img_size)
             if bird_bbox is not None:
-                bird_bboxes[i].append(bird_bbox.tolist())
+                bird_bboxes[i][result["tracking_id"]] = bird_bbox.tolist()
 
             bbox = visualizer.get_bbox(result, calib)
             if bbox:
-                annotations.append(
+                coco["annotations"].append(
                     {
                         "image_id": i,
                         "bbox": [
@@ -81,16 +79,17 @@ def main():
                             int(bbox[2] - bbox[0]),
                             int(bbox[3] - bbox[1]),
                         ],
-                        "category_id": int(result["class"] - 1),
+                        "category_id": 0,  # int(result["class"] - 1),
+                        "score": float(result["score"]),
                     }
                 )
 
     with open("bird_bboxes.json", "w") as f:
-        json_bird_bboxes = jsbeautifier.beautify(json.dumps(bird_bboxes), js_opts)
+        json_bird_bboxes = jsbeautifier.beautify(json.dumps(bird_bboxes))
         f.write(json_bird_bboxes)
 
     with open("annotations.json", "w") as f:
-        json_annotations = jsbeautifier.beautify(json.dumps(annotations), js_opts)
+        json_annotations = jsbeautifier.beautify(json.dumps(coco))
         f.write(json_annotations)
 
 
